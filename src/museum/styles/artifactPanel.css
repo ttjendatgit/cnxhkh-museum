@@ -1,0 +1,433 @@
+.artifact-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: none;
+  color: #f1e7d4;
+  background: rgba(23, 19, 15, 0.72);
+  border: 1px solid #8b6a3e;
+  border-radius: 3px;
+  padding: 10px 20px;
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  letter-spacing: normal;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.artifact-prompt kbd {
+  display: inline-block;
+  border: 1px solid #d8b56a;
+  color: #d8b56a;
+  border-radius: 3px;
+  padding: 1px 7px;
+  margin-right: 8px;
+  font-family: inherit;
+}
+
+.artifact-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(15, 12, 9, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.artifact-panel {
+  width: min(1080px, 100%);
+  max-height: min(760px, 92vh);
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: linear-gradient(180deg, #efe4c8, #e4d6b2);
+  color: #2b2113;
+  border: 1px solid #8b6a3e;
+  border-radius: 4px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 0 0 6px #17130f, inset 0 0 0 8px #8b6a3e;
+  overflow: hidden;
+  /* Body font — Georgia/Times previously mis-rendered Vietnamese precomposed
+     diacritics (visible as stray mid-word gaps, e.g. "Hiế n pháp"). Inter/
+     Noto Sans have full, deliberate Vietnamese Unicode coverage; Arial and
+     the generic sans-serif fallback also render Vietnamese correctly on
+     every platform, so this degrades safely even without the named fonts
+     installed. */
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-rendering: optimizeLegibility;
+}
+
+.artifact-panel__media {
+  background: #17130f;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.artifact-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.artifact-viewer__stage {
+  position: relative;
+  /* Vertical drags still scroll the panel; horizontal ones are the swipe handled in ArtifactGallery. */
+  touch-action: pan-y;
+}
+
+.artifact-viewer__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #8b6a3e;
+  border-radius: 2px;
+  background: #221e1a;
+}
+
+.artifact-viewer__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  appearance: none;
+  width: 40px;
+  height: 56px;
+  border: 1px solid #8b6a3e;
+  border-radius: 3px;
+  background: rgba(23, 19, 15, 0.72);
+  color: #f1e7d4;
+  font-family: inherit;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.artifact-viewer__nav:hover {
+  background: rgba(23, 19, 15, 0.92);
+  border-color: #d8b56a;
+}
+
+.artifact-viewer__nav--prev {
+  left: 10px;
+}
+
+.artifact-viewer__nav--next {
+  right: 10px;
+}
+
+.artifact-viewer__counter {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 2px 10px;
+  border: 1px solid #8b6a3e;
+  border-radius: 999px;
+  background: rgba(23, 19, 15, 0.78);
+  color: #f1e7d4;
+  font-size: 12px;
+}
+
+.artifact-viewer__caption {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #cabfa9;
+  font-style: italic;
+}
+
+.artifact-panel__tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.artifact-panel__tab {
+  appearance: none;
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #8b6a3e;
+  border-radius: 3px;
+  background: transparent;
+  color: #cabfa9;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.artifact-panel__tab:hover {
+  color: #f1e7d4;
+}
+
+.artifact-panel__tab--active {
+  background: #8b6a3e;
+  color: #17130f;
+}
+
+.artifact-model-viewer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid #8b6a3e;
+  border-radius: 2px;
+  background: radial-gradient(circle at 50% 40%, #2b241d, #17130f 75%);
+  overflow: hidden;
+  cursor: grab;
+}
+
+.artifact-model-viewer canvas {
+  /* Touch drags rotate the model (OrbitControls) instead of scrolling the panel. !important:
+     OrbitControls writes its own inline touch-action (and resets it to auto at times). */
+  touch-action: none !important;
+}
+
+.artifact-model-viewer:active {
+  cursor: grabbing;
+}
+
+.artifact-model-viewer__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #cabfa9;
+  pointer-events: none;
+}
+
+.artifact-gallery {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.artifact-gallery__thumb {
+  appearance: none;
+  padding: 0;
+  border: 1px solid #8b6a3e;
+  border-radius: 2px;
+  overflow: hidden;
+  width: 64px;
+  height: 48px;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+  background: #221e1a;
+}
+
+.artifact-gallery__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.artifact-gallery__thumb--broken {
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.artifact-gallery__fallback {
+  color: #8b6a3e;
+  font-size: 18px;
+}
+
+.artifact-panel__media-fallback {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #8b6a3e;
+  border-radius: 2px;
+  background: #221e1a;
+  color: #8b6a3e;
+  font-size: 13px;
+  letter-spacing: normal;
+  text-align: center;
+  padding: 12px;
+}
+
+.artifact-gallery__thumb:hover {
+  opacity: 0.9;
+}
+
+.artifact-gallery__thumb--active {
+  opacity: 1;
+  border-color: #d8b56a;
+}
+
+.artifact-panel__info {
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+.artifact-panel__close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  appearance: none;
+  border: 1px solid #8b6a3e;
+  background: rgba(23, 19, 15, 0.5);
+  color: #f1e7d4;
+  width: 34px;
+  height: 34px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.artifact-panel__eyebrow {
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #6f5836;
+  margin: 0 0 6px;
+}
+
+.artifact-panel__title {
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: normal;
+  word-spacing: normal;
+  margin: 0 0 4px;
+  color: #221e1a;
+}
+
+.artifact-panel__subtitle {
+  font-size: 15px;
+  font-style: italic;
+  color: #4a3a24;
+  margin: 0 0 20px;
+}
+
+.artifact-panel__divider {
+  height: 1px;
+  background: linear-gradient(90deg, #8b6a3e, transparent);
+  margin: 18px 0;
+}
+
+.artifact-panel__field {
+  margin-bottom: 16px;
+}
+
+.artifact-panel__field-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6f5836;
+  margin-bottom: 4px;
+}
+
+.artifact-panel__field-value {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #2b2113;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.artifact-panel__source {
+  font-size: 12px;
+  color: #6f5836;
+}
+
+@media (max-width: 760px) {
+  .artifact-overlay {
+    padding: 0;
+  }
+  .artifact-panel {
+    grid-template-columns: 1fr;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+  .artifact-panel__media {
+    max-height: 40vh;
+  }
+}
+
+/* Touch: finger-sized buttons, the panel inside the phone's safe area, and a phone held sideways
+   (short screen) gets the two-column layout back instead of a 40vh strip for the media. */
+@media (pointer: coarse) {
+  .artifact-panel__close {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    z-index: 2;
+    background: rgba(23, 19, 15, 0.85);
+  }
+
+  .artifact-viewer__nav {
+    width: 48px;
+    height: 64px;
+  }
+
+  .artifact-panel__tab {
+    min-height: 44px;
+  }
+
+  .artifact-gallery__thumb {
+    width: 72px;
+    height: 54px;
+  }
+
+  .artifact-panel__media,
+  .artifact-panel__info {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .artifact-panel__info {
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 760px) {
+  .artifact-panel {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+  .artifact-panel__info {
+    /* The close button floats over the top-right corner. */
+    padding-top: 20px;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 520px) {
+  .artifact-overlay {
+    padding: 0;
+  }
+  .artifact-panel {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .artifact-panel__media {
+    max-height: none;
+  }
+  .artifact-panel__title {
+    font-size: 22px;
+    padding-right: 48px;
+  }
+}

@@ -1,0 +1,111 @@
+.final-room-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: none;
+  color: #f1e7d4;
+  background: rgba(23, 19, 15, 0.72);
+  border: 1px solid #8b6a3e;
+  border-radius: 3px;
+  padding: 10px 20px;
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  letter-spacing: normal;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.final-room-prompt kbd {
+  display: inline-block;
+  border: 1px solid #d8b56a;
+  color: #d8b56a;
+  border-radius: 3px;
+  padding: 1px 7px;
+  margin-right: 8px;
+  font-family: inherit;
+}
+
+.final-room-overlay,
+.final-room-standalone {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: #0d0b09;
+}
+
+.final-room-overlay {
+  z-index: 40;
+}
+
+.final-room-overlay__bar {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.final-room-overlay__button {
+  appearance: none;
+  padding: 8px 14px;
+  border: 1px solid #8b6a3e;
+  border-radius: 3px;
+  background: rgba(23, 19, 15, 0.85);
+  color: #d8b56a;
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.final-room-overlay__button:hover {
+  background: #8b6a3e;
+  color: #17130f;
+}
+
+.final-room-overlay__loading {
+  margin: 0;
+  padding: 80px 20px;
+  text-align: center;
+  color: #cabfa9;
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+}
+
+/* Touch: bigger buttons, and on a phone the button bar sits in its own strip at the top instead of
+   floating over the game's title. The strip's height is handed to the game's sticky status bar
+   (--fg-sticky-top) so the two never overlap. */
+@media (pointer: coarse) {
+  .final-room-overlay__button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (pointer: coarse) and (max-width: 760px) {
+  .final-room-overlay {
+    --fg-sticky-top: calc(max(8px, env(safe-area-inset-top)) + 60px);
+    overscroll-behavior: contain;
+  }
+  .final-room-overlay__bar {
+    position: sticky;
+    top: 0;
+    right: auto;
+    z-index: 6;
+    justify-content: flex-end;
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    background: #0d0b09;
+    border-bottom: 1px solid rgba(139, 106, 62, 0.4);
+  }
+  .final-room-prompt {
+    display: none;
+  }
+}
+
+.final-room-overlay,
+.final-room-standalone {
+  -webkit-overflow-scrolling: touch;
+}

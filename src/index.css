@@ -59,3 +59,25 @@ canvas {
   color: #fff;
   text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
 }
+
+/* Phones and tablets: the browser's address bar makes 100vh taller than what is visible, which
+   stretches the canvas and pushes fixed controls off screen — use the dynamic viewport height. */
+@media (pointer: coarse) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hud-info {
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    font-size: 13px;
+  }
+}

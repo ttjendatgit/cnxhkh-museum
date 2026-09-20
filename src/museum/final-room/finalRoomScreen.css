@@ -1,0 +1,16 @@
+.final-room-screen {
+  background: #221e1a;
+  overflow: hidden;
+  user-select: none;
+}
+
+.final-room-screen__loading {
+  margin: 0;
+  padding-top: 270px;
+  text-align: center;
+  color: #b08a4f;
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}

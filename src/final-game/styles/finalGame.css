@@ -1,0 +1,756 @@
+/* Scoped to .final-game — deliberately not touching global index.css/App.css
+   so this module stays isolated from the existing museum rendering. */
+
+.final-game {
+  --fg-charcoal: #0d0b09;
+  --fg-panel: #15120f;
+  --fg-panel-raised: #1b1712;
+  --fg-bronze: #b08a4f;
+  --fg-bronze-dim: #8b6a3e;
+  --fg-gold: #d8b56a;
+  --fg-ivory: #eadaa8; /* champagne */
+  --fg-ivory-dim: #cabfa9;
+  --fg-success: #7a9b6e;
+  --fg-danger: #a9524a;
+
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  /* max(): the same 32px / 20px as ever on a desktop, but clear of a phone's notch and home bar.
+     --fg-kb-inset is the on-screen keyboard's height (hooks/useKeyboardInset), so the page can
+     scroll far enough to lift the answer box above the keyboard. */
+  padding: max(32px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) calc(max(32px, env(safe-area-inset-bottom)) + var(--fg-kb-inset, 0px)) max(20px, env(safe-area-inset-left));
+  background: radial-gradient(circle at 50% 0%, #1c1710 0%, var(--fg-charcoal) 70%);
+  color: var(--fg-ivory);
+  /* Vietnamese-safe stacks: Georgia mis-renders precomposed Vietnamese
+     diacritics (stray gaps inside words), so body text uses Inter/Noto Sans
+     with Arial/sans-serif fallbacks and headings use Noto Serif/Times. */
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-rendering: optimizeLegibility;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.final-game * {
+  box-sizing: border-box;
+}
+
+.final-game__eyebrow {
+  letter-spacing: 0.35em;
+  font-size: 12px;
+  color: var(--fg-bronze);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.final-game__title {
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: clamp(24px, 4vw, 40px);
+  color: var(--fg-gold);
+  letter-spacing: 0.06em;
+  margin: 4px 0 0;
+  text-align: center;
+  font-weight: 400;
+}
+
+.fg-panel {
+  width: 100%;
+  max-width: 640px;
+  background: linear-gradient(180deg, var(--fg-panel-raised), var(--fg-panel));
+  border: 1px solid var(--fg-bronze-dim);
+  border-radius: 4px;
+  padding: 28px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.fg-panel--wide {
+  max-width: 920px;
+}
+
+.fg-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-ivory-dim);
+  margin-bottom: 8px;
+}
+
+.fg-input {
+  width: 100%;
+  background: var(--fg-charcoal);
+  border: 1px solid var(--fg-bronze-dim);
+  color: var(--fg-ivory);
+  font-family: inherit;
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.fg-input:focus {
+  border-color: var(--fg-gold);
+}
+
+.fg-button {
+  appearance: none;
+  border: 1px solid var(--fg-bronze);
+  background: transparent;
+  color: var(--fg-gold);
+  font-family: inherit;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 13px;
+  padding: 12px 22px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.fg-button:hover:not(:disabled) {
+  background: var(--fg-bronze);
+  color: var(--fg-charcoal);
+}
+
+.fg-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fg-button--primary {
+  background: var(--fg-bronze);
+  color: var(--fg-charcoal);
+}
+
+.fg-button--primary:hover:not(:disabled) {
+  background: var(--fg-gold);
+}
+
+.fg-button--danger {
+  border-color: var(--fg-danger);
+  color: var(--fg-danger);
+}
+
+.fg-button--danger:hover:not(:disabled) {
+  background: var(--fg-danger);
+  color: var(--fg-ivory);
+}
+
+.fg-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fg-question {
+  white-space: pre-line; /* a question may put its quoted sentence on a second line */
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--fg-ivory);
+  margin: 0 0 20px;
+}
+
+.fg-feedback {
+  white-space: pre-line;
+  margin-top: 12px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+.fg-feedback--correct {
+  color: var(--fg-success);
+}
+
+.fg-feedback--wrong {
+  color: var(--fg-danger);
+}
+
+.fg-letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 8px 0 24px;
+}
+
+.fg-letter-slot {
+  width: 44px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fg-bronze-dim);
+  border-radius: 3px;
+  font-size: 22px;
+  color: var(--fg-gold);
+  background: var(--fg-charcoal);
+}
+
+.fg-letter-slot--space {
+  border: none;
+  background: transparent;
+  width: 18px;
+}
+
+.fg-letter-slot--locked {
+  color: var(--fg-ivory-dim);
+  opacity: 0.35;
+}
+
+.fg-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--fg-charcoal);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.fg-progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--fg-bronze-dim), var(--fg-gold));
+  transition: width 0.4s ease;
+}
+
+.fg-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fg-table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fg-ivory-dim);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--fg-bronze-dim);
+}
+
+.fg-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(139, 106, 62, 0.25);
+  font-size: 15px;
+}
+
+.fg-table tr:last-child td {
+  border-bottom: none;
+}
+
+.fg-rank {
+  color: var(--fg-gold);
+  font-size: 18px;
+  width: 40px;
+}
+
+.fg-rank--1 {
+  color: #f1cd7a;
+}
+
+.fg-status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--fg-bronze-dim);
+}
+
+.fg-status-pill--finished {
+  border-color: var(--fg-success);
+  color: var(--fg-success);
+}
+
+.fg-status-pill--playing {
+  border-color: var(--fg-gold);
+  color: var(--fg-gold);
+}
+
+.fg-divider {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--fg-bronze-dim), transparent);
+  margin: 20px 0;
+}
+
+.fg-muted {
+  color: var(--fg-ivory-dim);
+  font-size: 13px;
+}
+
+.fg-question-image {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border: 1px solid var(--fg-bronze-dim);
+  border-radius: 3px;
+  margin-bottom: 16px;
+}
+
+.fg-hint {
+  margin: -8px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-gold);
+  font-style: italic;
+}
+
+/* ── Game screen: crossword left, clue right ─────────────────────────── */
+
+.fg-game__header {
+  text-align: center;
+}
+
+.fg-game {
+  width: 100%;
+  max-width: 1240px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.fg-game__left,
+.fg-game__right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.fg-game__right {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 980px) {
+  .fg-game {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  /* On a phone the parts stack in this order: crossword, then the chosen question with its answer
+     and keyword boxes, then the question list. The left column dissolves so its crossword and
+     list can be ordered around the question panel. */
+  .fg-game__left {
+    display: contents;
+  }
+  .fg-game__left > .fg-cw {
+    order: 1;
+  }
+  .fg-game__right {
+    position: static;
+    order: 2;
+    /* Where picking a question scrolls to: just under the sticky status bar. */
+    scroll-margin-top: calc(var(--fg-sticky-top, env(safe-area-inset-top, 0px)) + 64px);
+  }
+  .fg-game__left > .fg-picker {
+    order: 3;
+  }
+}
+
+.fg-game .fg-panel {
+  max-width: none;
+}
+
+/* ── Crossword grid ──────────────────────────────────────────────────── */
+
+.fg-cw {
+  --cw-cell: 30px;
+  --cw-gap: 3px;
+  padding: 22px 24px 26px;
+  overflow-x: auto;
+}
+
+.fg-cw__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cw-gap);
+  width: max-content;
+  margin: 0 auto;
+}
+
+.fg-cw__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fg-cw__row--word-gap {
+  margin-top: 12px;
+}
+
+.fg-cw__row {
+  cursor: pointer;
+}
+
+/* The number is a button (keyboard/touch friendly) that looks like the plain label it used to be. */
+.fg-cw__num {
+  position: relative;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  width: 24px;
+  text-align: right;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--fg-bronze-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.fg-cw__row--current .fg-cw__num,
+.fg-cw__row--solved .fg-cw__num {
+  color: var(--fg-gold);
+}
+
+.fg-cw__cells {
+  display: grid;
+  grid-auto-rows: calc(var(--cw-cell) * 1.13);
+  column-gap: var(--cw-gap);
+}
+
+.fg-cw__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fg-bronze-dim);
+  background: var(--fg-charcoal);
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: calc(var(--cw-cell) * 0.57);
+  color: var(--fg-ivory);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+}
+
+.fg-cw__cell--filled {
+  border-color: var(--fg-bronze);
+  background: #16120e;
+}
+
+/* The vertical secret column: gold-edged; when its letter is revealed it glows. */
+.fg-cw__cell--key {
+  border-color: rgba(216, 181, 106, 0.6);
+  background: linear-gradient(180deg, #1d1810, #120f0b);
+}
+
+.fg-cw__cell--key.fg-cw__cell--filled {
+  border-color: var(--fg-gold);
+  color: #f5e7b8;
+  background: linear-gradient(180deg, #33290f, #1d170a);
+  box-shadow: 0 0 10px rgba(216, 181, 106, 0.55), inset 0 0 8px rgba(216, 181, 106, 0.25);
+}
+
+.fg-cw__row--current .fg-cw__cell:not(.fg-cw__cell--filled) {
+  border-color: var(--fg-bronze);
+}
+
+.fg-cw__row--current .fg-cw__cell--key:not(.fg-cw__cell--filled) {
+  border-color: var(--fg-gold);
+}
+
+/* Question state next to the number: ✓ solved, ▶ chosen (the chosen one wins). */
+.fg-cw__row--solved .fg-cw__num::before,
+.fg-cw__row--current .fg-cw__num::before {
+  position: absolute;
+  left: 0;
+  color: var(--fg-gold);
+}
+.fg-cw__row--solved .fg-cw__num::before {
+  content: '✓';
+}
+.fg-cw__row--current .fg-cw__num::before {
+  content: '▶';
+}
+
+/* ── Clue panel ──────────────────────────────────────────────────────── */
+
+.fg-clue {
+  padding: 26px 28px 24px;
+}
+
+.fg-question-number {
+  margin: 0 0 14px;
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  color: var(--fg-gold);
+}
+
+.fg-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fg-answer .fg-button {
+  align-self: flex-start;
+  letter-spacing: 0.2em;
+}
+
+/* ── Finish screen ───────────────────────────────────────────────────── */
+
+.fg-finish {
+  max-width: 720px;
+  padding: 44px 40px;
+  text-align: center;
+  border-width: 2px;
+  box-shadow: 0 0 0 6px var(--fg-charcoal), 0 0 0 7px var(--fg-bronze-dim), 0 12px 50px rgba(0, 0, 0, 0.6);
+}
+
+.fg-finish__congrats {
+  margin: 0;
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: clamp(30px, 5vw, 46px);
+  letter-spacing: 0.3em;
+  color: var(--fg-ivory);
+  padding-left: 0.3em;
+}
+
+.fg-finish__team {
+  margin: 10px 0 0;
+  font-size: 20px;
+  letter-spacing: 0.2em;
+  color: var(--fg-gold);
+}
+
+/* ── Result stats ────────────────────────────────────────────────────── */
+
+.fg-result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 16px;
+  text-align: center;
+}
+
+.fg-result__value {
+  display: block;
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: 28px;
+  color: var(--fg-gold);
+}
+
+.fg-result__label {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-ivory-dim);
+}
+
+/* Phones. The crossword keeps letters big enough to read Vietnamese accents (24px cells, ~14px
+   letters) instead of shrinking to fit the width: a wide grid scrolls sideways INSIDE its own panel
+   (the page never scrolls sideways), with the row numbers pinned at the left so they can always
+   be tapped. Kept at the end so it overrides the rules above. */
+@media (max-width: 600px) {
+  .fg-cw {
+    --cw-cell: 24px;
+    --cw-gap: 2px;
+    padding: 12px 8px 14px;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .fg-cw__rows {
+    margin: 0;
+  }
+  .fg-cw__row {
+    gap: 6px;
+    min-height: 36px;
+    border-radius: 3px;
+  }
+  .fg-cw__row--current {
+    background: rgba(216, 181, 106, 0.1);
+  }
+  .fg-cw__num {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: 36px;
+    min-height: 36px;
+    padding-left: 12px;
+    font-size: 12px;
+    /* Opaque, so cells scrolling underneath do not show through. */
+    background: #191510;
+  }
+  .fg-cw__row--current .fg-cw__num {
+    color: var(--fg-gold);
+    font-weight: 700;
+  }
+  .fg-cw__row--solved .fg-cw__num::before,
+  .fg-cw__row--current .fg-cw__num::before {
+    left: 2px;
+  }
+  .fg-clue {
+    padding: 20px 16px;
+  }
+  .fg-question {
+    font-size: 18px;
+  }
+  .fg-answer .fg-button {
+    align-self: stretch;
+  }
+}
+
+/* The keyword box under the clue: a divider, a small label, the same input style. */
+.fg-keyword .fg-divider {
+  margin: 22px 0 16px;
+}
+
+.fg-keyword .fg-label {
+  margin-bottom: 10px;
+}
+
+/* ── Player status: time / score / solved ────────────────────────────── */
+
+.fg-status {
+  /* Stays in view while the page scrolls (long clue on a phone). Under the museum overlay's
+     button strip the overlay sets --fg-sticky-top; otherwise it clears the notch. */
+  position: sticky;
+  top: var(--fg-sticky-top, env(safe-area-inset-top, 0px));
+  z-index: 5;
+  width: 100%;
+  max-width: 1240px;
+  padding: 10px 16px;
+  border: 1px solid var(--fg-bronze-dim);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--fg-panel-raised), var(--fg-panel));
+  text-align: center;
+}
+
+.fg-status__stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 28px;
+}
+
+.fg-status__stat {
+  font-size: 18px;
+  color: var(--fg-ivory);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fg-status__paused {
+  margin: 8px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--fg-gold);
+}
+
+/* ── Question list (phones): pick any question ───────────────────────── */
+
+.fg-picker {
+  display: none;
+  padding: 18px;
+}
+
+.fg-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+
+.fg-picker__item {
+  appearance: none;
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--fg-bronze-dim);
+  border-radius: 3px;
+  background: var(--fg-charcoal);
+  color: var(--fg-ivory);
+  font-family: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.fg-picker__item--solved {
+  border-color: var(--fg-success);
+  color: var(--fg-success);
+}
+
+.fg-picker__item--active {
+  border-color: var(--fg-gold);
+  background: rgba(216, 181, 106, 0.16);
+  color: var(--fg-gold);
+}
+
+@media (max-width: 980px) {
+  .fg-picker {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  /* One compact line: the three icons + numbers, the words dropped (they stay in aria-labels). */
+  .fg-status {
+    padding: 6px 12px;
+  }
+  .fg-status__stats {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .fg-status__stat {
+    font-size: 16px;
+  }
+  .fg-status__label {
+    display: none;
+  }
+  .fg-status__paused {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .fg-picker {
+    padding: 14px;
+  }
+  .fg-finish {
+    padding: 28px 16px;
+  }
+  .fg-finish__congrats {
+    letter-spacing: 0.18em;
+    padding-left: 0.18em;
+  }
+  .fg-finish__team {
+    font-size: 17px;
+    letter-spacing: 0.1em;
+    overflow-wrap: anywhere;
+  }
+  .fg-result {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Touch screens: finger-sized fields and buttons, and room to scroll the answer box up above the keyboard. */
+@media (pointer: coarse) {
+  .fg-input {
+    min-height: 48px;
+  }
+  .fg-button {
+    min-height: 48px;
+  }
+  .fg-picker__item {
+    min-height: 48px;
+  }
+  .fg-answer {
+    scroll-margin-top: calc(var(--fg-sticky-top, env(safe-area-inset-top, 0px)) + 110px);
+  }
+}

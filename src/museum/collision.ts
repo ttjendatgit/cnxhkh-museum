@@ -1,5 +1,6 @@
 import { rooms, buildEndWall, type RoomConfig, type WallSpec } from './Museum'
 import { WALL_THICKNESS } from './constants'
+import { FINAL_STATION_FOOTPRINT, finalStationPosition } from './final-room/finalStation'
 
 /**
  * Static collision data for the museum, built once from the exact same
@@ -119,6 +120,8 @@ function roomExhibitColliders(room: RoomConfig): Collider[] {
       return [
         box([-columnX, 0, columnZ], 0.22 + MARGIN * 2, 0.22 + MARGIN * 2),
         box([columnX, 0, columnZ], 0.22 + MARGIN * 2, 0.22 + MARGIN * 2),
+        // The game station podium.
+        box(finalStationPosition(room.centerZ), FINAL_STATION_FOOTPRINT + MARGIN * 2, FINAL_STATION_FOOTPRINT + MARGIN * 2),
       ]
     }
     default:

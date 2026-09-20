@@ -1,5 +1,8 @@
 import { useMemo } from 'react'
-import RoomLabel from './components/RoomLabel'
+import NationalIdentityDisplay from './components/NationalIdentityDisplay'
+import RoomTitlePlaque, { ROOM_PLAQUE_WIDTH, type RoomTitlePlaqueContent } from './components/RoomTitlePlaque'
+import InteriorRoomIntroBoard, { type InteriorRoomIntroBoardContent } from './components/InteriorRoomIntroBoard'
+import LobbyIntroductionBoard, { LOBBY_BOARD_SIZE } from './components/LobbyIntroductionBoard'
 import Wall from './components/Wall'
 import Baseboard from './components/Baseboard'
 import CeilingCove from './components/CeilingCove'
@@ -19,7 +22,6 @@ export type WallOpening = 'open' | 'door' | 'closed'
 export interface RoomConfig {
   id: string
   title: string
-  subtitle?: string
   centerZ: number
   width: number
   depth: number
@@ -31,6 +33,12 @@ export interface RoomConfig {
   wallColor?: string
   lightColor?: string
   lightIntensity?: number
+  /** Entrance sign: hung outside beside the room's door, orientation only. */
+  plaque?: RoomTitlePlaqueContent
+  /** The room's large intro board, inside, on the wall to a visitor's right as they step through
+   * the door — a wide wall clear of the doors, the corners and every artifact and LED.
+   * `at` is its centre along that wall, as a z offset from the room's centre. */
+  introBoard?: InteriorRoomIntroBoardContent & { at: number }
 }
 
 const WARM_ROOM_LIGHT = '#FFDFB0'
@@ -62,7 +70,16 @@ export const rooms: RoomConfig[] = [
   {
     id: 'room1',
     title: 'PHÒNG I',
-    subtitle: 'DÂN CHỦ XÃ HỘI CHỦ NGHĨA Ở VIỆT NAM',
+    plaque: {
+      roomNumber: 'PHÒNG I',
+      period: '1945 – 1954',
+    },
+    introBoard: {
+      roomNumber: 'PHÒNG I',
+      title: 'SỰ RA ĐỜI CỦA\nQUYỀN LÀM CHỦ NHÂN DÂN',
+      period: '1945 – 1954',
+      at: 0,
+    },
     centerZ: -14,
     width: 16,
     depth: 14,
@@ -75,7 +92,16 @@ export const rooms: RoomConfig[] = [
   {
     id: 'room2',
     title: 'PHÒNG II',
-    subtitle: 'NHÀ NƯỚC PHÁP QUYỀN XÃ HỘI CHỦ NGHĨA Ở VIỆT NAM',
+    plaque: {
+      roomNumber: 'PHÒNG II',
+      period: '1954 – 1986',
+    },
+    introBoard: {
+      roomNumber: 'PHÒNG II',
+      title: 'XÂY DỰNG NỀN DÂN CHỦ\nXÃ HỘI CHỦ NGHĨA',
+      period: '1954 – 1986',
+      at: 0,
+    },
     centerZ: -31,
     width: 16,
     depth: 14,
@@ -88,7 +114,16 @@ export const rooms: RoomConfig[] = [
   {
     id: 'room3',
     title: 'PHÒNG III',
-    subtitle: 'PHÁT HUY DÂN CHỦ & XÂY DỰNG\nNHÀ NƯỚC PHÁP QUYỀN',
+    plaque: {
+      roomNumber: 'PHÒNG III',
+      period: '1986 – 2021',
+    },
+    introBoard: {
+      roomNumber: 'PHÒNG III',
+      title: 'PHÁT HUY DÂN CHỦ\nVÀ XÂY DỰNG\nNHÀ NƯỚC PHÁP QUYỀN',
+      period: '1986 – 2021',
+      at: 0,
+    },
     centerZ: -48,
     width: 16,
     depth: 14,
@@ -101,6 +136,14 @@ export const rooms: RoomConfig[] = [
   {
     id: 'final',
     title: 'PHÒNG KẾT',
+    plaque: {
+      roomNumber: 'PHÒNG KẾT',
+    },
+    introBoard: {
+      roomNumber: 'PHÒNG KẾT',
+      title: 'THỬ THÁCH\nQUYỀN LÀM CHỦ',
+      at: -1.5,
+    },
     centerZ: -65,
     width: 16,
     depth: 14,
@@ -375,6 +418,54 @@ function RoomExtras({ room }: { room: RoomConfig }) {
 const FLOOR_Z_START = 5
 const FLOOR_Z_END = -73
 const MUSEUM_WIDTH = 16
+// The plaque hangs on the front wall's outer face (the side visitors approach
+// from, so it faces them as they walk toward the door), at eye level, a small
+// gap from the door frame — on whichever side of the door has more wall.
+const PLAQUE_Y = 1.65
+const PLAQUE_FRONT_STANDOFF = 0.2
+const PLAQUE_DOOR_GAP = 0.4
+const DOOR_TRIM_WIDTH = 0.045
+// The large intro boards hang on the right-hand wall, their centre 1.7m up.
+const INTRO_BOARD_Y = 1.7
+
+/** Position and rotation of a room's intro board: on the right wall, facing into the room (-x). */
+function getIntroBoardPlacement(room: RoomConfig, board: NonNullable<RoomConfig['introBoard']>): { position: [number, number, number]; rotationY: number } {
+  return { position: [room.width / 2 - WALL_MOUNT_GAP, INTRO_BOARD_Y, room.centerZ + board.at], rotationY: -Math.PI / 2 }
+}
+
+function getPlaquePosition(room: RoomConfig): [number, number, number] {
+  const innerHalfWidth = room.width / 2 - WALL_THICKNESS / 2
+  const doorLeft = room.frontDoorX - DOOR_WIDTH / 2
+  const doorRight = room.frontDoorX + DOOR_WIDTH / 2
+  const leftSegmentWidth = doorLeft + innerHalfWidth
+  const rightSegmentWidth = innerHalfWidth - doorRight
+  // Door trim + gap, then the plaque's half-width and its backing plate, so the gap is
+  // measured from the door frame's outer edge to the plaque's visible edge.
+  const reach = DOOR_TRIM_WIDTH + PLAQUE_DOOR_GAP + ROOM_PLAQUE_WIDTH / 2 + 0.04
+  const x = rightSegmentWidth >= leftSegmentWidth ? doorRight + reach : doorLeft - reach
+
+  return [x, PLAQUE_Y, room.centerZ + room.depth / 2 + PLAQUE_FRONT_STANDOFF]
+}
+
+// The lobby's main wall is the back wall's wider segment beside the door. The flag-and-map
+// column sits at its far end and the lobby introduction board hangs to its inner side, with
+// clear wall between the two so they read as one composition.
+const LOBBY_COLUMN_HALF_WIDTH = 0.75 // the map's frame, the wider of the two
+const LOBBY_COLUMN_END_MARGIN = 1.85 // column centre to the side wall
+const LOBBY_BOARD_GAP = 1.45 // clear wall between the column and the board
+const LOBBY_BOARD_Y = 1.75
+
+function getLobbyLayout(room: RoomConfig): { columnX: number; boardX: number } {
+  const innerHalfWidth = room.width / 2 - WALL_THICKNESS / 2
+  const doorRight = room.backDoorX + DOOR_WIDTH / 2
+  const doorLeft = room.backDoorX - DOOR_WIDTH / 2
+  const rightSegmentWidth = innerHalfWidth - doorRight
+  const leftSegmentWidth = doorLeft + innerHalfWidth
+  const side = rightSegmentWidth >= leftSegmentWidth ? 1 : -1
+  const columnX = side * (innerHalfWidth - LOBBY_COLUMN_END_MARGIN)
+  const boardX = columnX - side * (LOBBY_COLUMN_HALF_WIDTH + LOBBY_BOARD_GAP + LOBBY_BOARD_SIZE.width / 2)
+  return { columnX, boardX }
+}
 
 export default function Museum() {
   const spanLength = FLOOR_Z_START - FLOOR_Z_END
@@ -426,14 +517,15 @@ export default function Museum() {
                 between exhibits pick up a soft warm gradient instead of
                 reading as flat/pure black. */}
             <pointLight
-              position={[-(room.width / 2 - 0.35), 2.1, room.centerZ]}
+              position={[-(room.width / 2 - 1.6), 2.1, room.centerZ]}
               color={WARM_ROOM_LIGHT}
               intensity={0.2}
               distance={Math.max(room.depth * 0.7, 5)}
               decay={1.4}
             />
+            {/* Both side fill lights are held off the walls so no wall centre shows a hot spot. */}
             <pointLight
-              position={[room.width / 2 - 0.35, 2.1, room.centerZ]}
+              position={[room.width / 2 - 1.6, 2.1, room.centerZ]}
               color={WARM_ROOM_LIGHT}
               intensity={0.2}
               distance={Math.max(room.depth * 0.7, 5)}
@@ -454,6 +546,21 @@ export default function Museum() {
                     exhibition rhythm as the wall panels further into the museum. */}
                 <pointLight position={[-(room.width / 2 - WALL_MOUNT_GAP - 0.5), 2.05, room.centerZ]} color={WARM_ROOM_LIGHT} intensity={0.36} distance={1.6} decay={2} />
                 <pointLight position={[-(room.width / 2 - WALL_MOUNT_GAP - 0.5), 2.05, room.centerZ + 2.4]} color={WARM_ROOM_LIGHT} intensity={0.36} distance={1.6} decay={2} />
+                {/* The lobby's main wall (straight ahead of the spawn point, beside the door):
+                    the introduction board, with the flag and the map of Vietnam beside it. */}
+                <LobbyIntroductionBoard position={[getLobbyLayout(room).boardX, LOBBY_BOARD_Y, room.centerZ - room.depth / 2 + WALL_MOUNT_GAP]} />
+                <NationalIdentityDisplay position={[getLobbyLayout(room).columnX, 0, room.centerZ - room.depth / 2 + WALL_MOUNT_GAP]} />
+                <ExhibitSpotlight
+                  position={[getLobbyLayout(room).columnX, WALL_HEIGHT - 0.4, room.centerZ - room.depth / 2 + 1.7]}
+                  targetPosition={[getLobbyLayout(room).columnX, 1.9, room.centerZ - room.depth / 2 + WALL_MOUNT_GAP]}
+                  color={WARM_ROOM_LIGHT}
+                  intensity={2.0}
+                  angle={0.45}
+                  penumbra={0.75}
+                  distance={7}
+                  castShadow={false}
+                />
+                <RecessedSpot position={[getLobbyLayout(room).columnX, WALL_HEIGHT - 0.02, room.centerZ - room.depth / 2 + 1.7]} />
               </>
             )}
             {/* Ceiling track lights — soft, non-shadow, evenly spaced fixtures,
@@ -485,15 +592,19 @@ export default function Museum() {
                 )}
               </group>
             ))}
-            <RoomLabel
-              title={room.title}
-              subtitle={room.subtitle}
-              position={[room.width / 2 - 0.2, 2.4, room.centerZ]}
-              rotationY={-Math.PI / 2}
-            />
+            {room.plaque && <RoomTitlePlaque {...room.plaque} position={getPlaquePosition(room)} />}
+            {room.introBoard && (
+              <InteriorRoomIntroBoard
+                roomNumber={room.introBoard.roomNumber}
+                title={room.introBoard.title}
+                period={room.introBoard.period}
+                {...getIntroBoardPlacement(room, room.introBoard)}
+              />
+            )}
           </group>
         )
       })}
     </group>
   )
 }
+

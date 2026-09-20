@@ -3,15 +3,21 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "test": "node --experimental-strip-types --test src/final-game/services/scoring.test.ts src/final-game/services/questionProgress.test.ts src/final-game/services/roomSchema.test.ts src/final-game/services/teamName.test.ts src/final-game/data/questions.test.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "firebase": "^12.19.0",
     "framer-motion": "^13.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",

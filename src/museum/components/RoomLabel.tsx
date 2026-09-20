@@ -109,7 +109,7 @@ export default function RoomLabel({
   rotationY = 0,
   panelWidth = 4.8,
   accentColor = SUBTITLE_IVORY,
-  periodLabel = '1976 — NAY',
+  periodLabel,
 }: RoomLabelProps) {
   const panelHeight = subtitle ? 2.2 : 0.7
   const chapter = subtitle ? chapterFromTitle(title) : null
@@ -220,18 +220,20 @@ export default function RoomLabel({
           >
             {subtitle}
           </Text>
-          <Text
-            fontSize={0.14}
-            color={PERIOD_BRONZE}
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={panelWidth - 0.3}
-            textAlign="center"
-            letterSpacing={0.08}
-            position={[0, -(panelHeight / 2 - 0.22), TEXT_Z]}
-          >
-            {periodLabel}
-          </Text>
+          {periodLabel && (
+            <Text
+              fontSize={0.14}
+              color={PERIOD_BRONZE}
+              anchorX="center"
+              anchorY="middle"
+              maxWidth={panelWidth - 0.3}
+              textAlign="center"
+              letterSpacing={0.08}
+              position={[0, -(panelHeight / 2 - 0.22), TEXT_Z]}
+            >
+              {periodLabel}
+            </Text>
+          )}
         </>
       )}
     </group>

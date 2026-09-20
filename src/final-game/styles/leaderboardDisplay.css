@@ -1,0 +1,626 @@
+/* Public leaderboard display (projector page + the Final Room's big screen).
+   Builds on the .final-game tokens in finalGame.css — bronze / charcoal / gold. */
+
+.fg-board {
+  position: relative;
+  overflow: hidden;
+  justify-content: flex-start;
+  gap: 18px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(216, 181, 106, 0.16) 0%, transparent 60%),
+    radial-gradient(circle at 50% 0%, #2f2a23 0%, var(--fg-charcoal) 72%);
+}
+
+/* Screen glow: a soft bronze halo hugging the inside edge that slowly breathes,
+   plus a faint scanline texture so it reads as a lit display, not a web page. */
+.fg-board::before,
+.fg-board::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.fg-board::before {
+  box-shadow: inset 0 0 90px 6px rgba(176, 138, 79, 0.28), inset 0 0 0 1px rgba(216, 181, 106, 0.35);
+  animation: fg-glow-breathe 6s ease-in-out infinite;
+}
+
+.fg-board::after {
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.09) 0, rgba(0, 0, 0, 0.09) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode: multiply;
+}
+
+.fg-board--page {
+  padding: 40px 32px;
+}
+
+.fg-board--wall {
+  width: 1200px;
+  height: 600px;
+  min-height: 0;
+  padding: 26px 44px 28px;
+  gap: 10px;
+}
+
+.fg-board__header {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--fg-bronze-dim);
+}
+
+.fg-board--wall .fg-board__header {
+  max-width: none;
+}
+
+.fg-board__title {
+  text-align: left;
+}
+
+.fg-board--wall .final-game__eyebrow {
+  font-size: 15px;
+}
+
+.fg-board--wall .final-game__title {
+  font-size: 40px;
+}
+
+.fg-board__status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fg-board--wall .fg-status-pill {
+  font-size: 14px;
+  padding: 5px 14px;
+}
+
+.fg-board__clock {
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  color: var(--fg-gold);
+  letter-spacing: 0.04em;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+
+.fg-board__stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1000px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fg-stage-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fg-board--wall .fg-board__stage {
+  max-width: none;
+}
+
+/* One slow light pass across the board every time the phase changes. */
+.fg-board__sweep {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 26%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(241, 205, 122, 0.16) 50%, transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: fg-sweep 1.8s ease-out 0.15s both;
+}
+
+/* The lighter pass that replays whenever a score or rank changes. */
+.fg-board__sweep--update {
+  background: linear-gradient(100deg, transparent, rgba(241, 205, 122, 0.1) 50%, transparent);
+  animation-duration: 1.4s;
+  animation-delay: 0s;
+}
+
+/* ── Waiting ───────────────────────────────────────────────────────────── */
+
+.fg-board__stage--waiting {
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.fg-board__emblem {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  margin-bottom: 10px;
+}
+
+.fg-board--wall .fg-board__emblem {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+}
+
+.fg-board__emblem::before,
+.fg-board__emblem::after,
+.fg-board__emblem span {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--fg-bronze);
+}
+
+.fg-board__emblem span {
+  inset: 24%;
+  background: radial-gradient(circle, rgba(241, 205, 122, 0.9), rgba(176, 138, 79, 0.15) 70%);
+  border-color: var(--fg-gold);
+  animation: fg-emblem-pulse 2.8s ease-in-out infinite;
+}
+
+.fg-board__emblem::before {
+  animation: fg-emblem-ring 2.8s ease-out infinite;
+}
+
+.fg-board__emblem::after {
+  animation: fg-emblem-ring 2.8s ease-out 1.4s infinite;
+}
+
+.fg-board__brand-eyebrow {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--fg-bronze);
+  padding-left: 0.5em; /* balances the trailing letter-space so it stays centred */
+}
+
+.fg-board--wall .fg-board__brand-eyebrow {
+  font-size: 18px;
+}
+
+.fg-board__rule {
+  width: 180px;
+  height: 1px;
+  margin: 8px 0 4px;
+  background: linear-gradient(90deg, transparent, var(--fg-gold), transparent);
+}
+
+.fg-board__subline kbd {
+  display: inline-block;
+  padding: 0 8px;
+  border: 1px solid var(--fg-gold);
+  border-radius: 3px;
+  color: var(--fg-gold);
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.fg-board__headline {
+  margin: 0;
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: clamp(26px, 3.4vw, 40px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-gold);
+}
+
+.fg-board--wall .fg-board__headline {
+  font-size: 44px;
+}
+
+.fg-board__subline {
+  max-width: 760px;
+  margin: 0 0 12px;
+  line-height: 1.5;
+  color: var(--fg-ivory-dim);
+  font-size: 16px;
+}
+
+.fg-board--wall .fg-board__subline {
+  font-size: 19px;
+}
+
+.fg-board__lobby-note {
+  margin: 0;
+  color: var(--fg-ivory-dim);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+
+.fg-board--wall .fg-board__lobby-note {
+  font-size: 18px;
+}
+
+.fg-board__chips {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 900px;
+}
+
+.fg-board__chip {
+  padding: 6px 16px;
+  border: 1px solid var(--fg-bronze-dim);
+  border-radius: 999px;
+  background: rgba(176, 138, 79, 0.1);
+  color: var(--fg-ivory);
+  font-size: 15px;
+}
+
+.fg-board__chip--enter {
+  animation: fg-row-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.35s + var(--i, 0) * 60ms);
+}
+
+.fg-board--wall .fg-board__chip {
+  font-size: 17px;
+}
+
+.fg-board__chip--more {
+  color: var(--fg-gold);
+}
+
+/* ── Ranking ───────────────────────────────────────────────────────────── */
+
+.fg-board__ranking {
+  width: 100%;
+}
+
+.fg-board__head,
+.fg-board__row {
+  display: grid;
+  grid-template-columns: 80px 1fr 150px 110px 150px;
+  align-items: center;
+  column-gap: 12px;
+}
+
+.fg-board__head {
+  padding: 4px 16px 8px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-ivory-dim);
+}
+
+.fg-board--wall .fg-board__head {
+  font-size: 13px;
+}
+
+.fg-board__head span:nth-child(n + 3),
+.fg-board__row > span:nth-child(n + 3) {
+  text-align: right;
+}
+
+.fg-board__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fg-board__row {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 16px;
+  border: 1px solid rgba(139, 106, 62, 0.35);
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(51, 43, 36, 0.85), rgba(42, 39, 35, 0.85));
+  font-size: 19px;
+  /* Reordering: rows glide to their new slot (see useRowFlip). */
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.9s ease, box-shadow 0.9s ease;
+}
+
+.fg-board__row--enter {
+  animation: fg-row-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.25s + var(--i, 0) * 70ms);
+}
+
+.fg-board--wall .fg-board__row {
+  padding: 6px 16px;
+  font-size: 22px;
+}
+
+.fg-board__row--leader {
+  border-color: var(--fg-gold);
+  background: linear-gradient(90deg, rgba(120, 92, 48, 0.55), rgba(51, 43, 36, 0.9));
+  box-shadow: 0 0 22px rgba(216, 181, 106, 0.18);
+}
+
+.fg-board__rank {
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: 1.25em;
+  color: var(--fg-gold);
+}
+
+.fg-board__row--leader .fg-board__rank {
+  color: #f1cd7a;
+}
+
+.fg-board__delta {
+  margin-left: 8px;
+  font-family: 'Inter', 'Noto Sans', Arial, sans-serif;
+  font-size: 0.55em;
+  color: var(--fg-success);
+  animation: fg-delta-in 0.6s ease-out both;
+}
+
+.fg-board__team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-ivory);
+}
+
+.fg-board__solved,
+.fg-board__time {
+  color: var(--fg-ivory-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.fg-board__score {
+  color: var(--fg-gold);
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: 1.15em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A team that just scored or climbed: gold wash + a highlight that sweeps the row.
+   Done with pseudo-elements and a transition so the row's own entrance
+   animation is never swapped out (which would replay it when this ends). */
+.fg-board__row--changed {
+  border-color: var(--fg-gold);
+  box-shadow: 0 0 26px rgba(241, 205, 122, 0.5);
+}
+
+.fg-board__row--changed::before,
+.fg-board__row--changed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.fg-board__row--changed::before {
+  background: rgba(241, 205, 122, 0.3);
+  animation: fg-row-wash 2.2s ease-out both;
+}
+
+.fg-board__row--changed::after {
+  background: linear-gradient(100deg, transparent 20%, rgba(241, 205, 122, 0.38) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: fg-row-shine 1.4s ease-out both;
+}
+
+.fg-board__more {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-bronze);
+}
+
+.fg-board__section {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-bronze);
+}
+
+.fg-board__banner {
+  align-self: center;
+  margin: 0 0 8px;
+  padding: 4px 20px;
+  border: 1px solid var(--fg-bronze);
+  border-radius: 999px;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--fg-gold);
+  animation: fg-banner-blink 2.4s ease-in-out infinite;
+}
+
+/* ── Final result ──────────────────────────────────────────────────────── */
+
+.fg-board__stage--final {
+  gap: 14px;
+}
+
+.fg-board__winner {
+  width: 100%;
+  padding: 14px 24px;
+  text-align: center;
+  border: 1px solid var(--fg-gold);
+  border-radius: 3px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(216, 181, 106, 0.28), rgba(42, 39, 35, 0.9) 75%);
+  box-shadow: 0 0 40px rgba(216, 181, 106, 0.22);
+  animation: fg-winner-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.fg-board__winner-label {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--fg-bronze);
+}
+
+.fg-board__winner-name {
+  margin: 4px 0;
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: clamp(30px, 4.4vw, 52px);
+  color: #f1cd7a;
+  text-shadow: 0 0 24px rgba(216, 181, 106, 0.45);
+}
+
+.fg-board--wall .fg-board__winner-name {
+  font-size: 50px;
+}
+
+.fg-board__winner-meta {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--fg-ivory-dim);
+}
+
+.fg-board--wall .fg-board__winner-meta {
+  font-size: 19px;
+}
+
+.fg-board--wall .fg-board__stage--final .fg-board__row {
+  font-size: 20px;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────────────────── */
+
+@keyframes fg-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes fg-sweep {
+  from {
+    transform: translateX(-120%) skewX(-12deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(480%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fg-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fg-row-wash {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fg-row-shine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fg-delta-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fg-winner-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes fg-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fg-emblem-pulse {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes fg-emblem-ring {
+  from {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes fg-banner-blink {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fg-board *,
+  .fg-board::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Status column: the room's status for teams still in play ("Đang chơi", "Đã kết thúc", ...), "✓ 12:34" once a team has finished. */
+.fg-board__time {
+  font-size: 0.8em;
+}
+
+.fg-board__time--done {
+  color: var(--fg-success);
+}
