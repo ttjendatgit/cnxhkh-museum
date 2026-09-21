@@ -5,6 +5,8 @@ import * as THREE from 'three'
 import { getMuseumColliders, resolveMove } from './collision'
 import { useArtifactStore } from './state/useArtifactStore'
 import { useFinalGameStore } from './final-room/useFinalGameStore'
+import { useVideoStore } from './state/useVideoStore'
+import { useKioskStore } from './state/useKioskStore'
 import { touchInput } from './input/touchInput'
 import { useIsTouchDevice } from './input/useIsTouchDevice'
 
@@ -112,7 +114,7 @@ export default function PlayerController() {
     // (not via a hook) so PlayerController doesn't re-render on every
     // proximity/open-state change, only the movement frame checks it.
     // Same freeze while the Final Room game overlay is open (typing answers).
-    if (useArtifactStore.getState().activeArtifact || useFinalGameStore.getState().open) {
+    if (useArtifactStore.getState().activeArtifact || useFinalGameStore.getState().open || useVideoStore.getState().active || useKioskStore.getState().open) {
       // A swipe that arrived meanwhile must not turn the camera once the panel closes.
       touchInput.lookX = 0
       touchInput.lookY = 0

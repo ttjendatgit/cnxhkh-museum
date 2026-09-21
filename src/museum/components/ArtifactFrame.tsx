@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Text } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { Group, MeshStandardMaterial, SRGBColorSpace, Texture, TextureLoader } from 'three'
+import type { Mesh } from 'three'
 import type { Artifact } from '../types/Artifact'
 import { useArtifactProximity } from '../hooks/useArtifactProximity'
 
@@ -25,8 +26,10 @@ const MAX_IMAGE_HEIGHT = 0.95
 // to press E) — tighter than the museum's older ambient description-reveal
 // radius, since this is a deliberate interact prompt, not passive flavor text.
 const PROXIMITY_RADIUS = 2.4
-// Small description board under the title plate. Always rendered (no distance,
-// hover or key involved) — period + at most two lines of description.
+// Small description board under the title plate — period + at most two lines of description.
+// It only shows once the player is close enough to interact (the same radius as the E prompt):
+// from afar the wall shows just the artifact's name. It fades rather than pops.
+const BOARD_FADE_SPEED = 0.16
 const BOARD_MIN_WIDTH = 1.1
 const BOARD_HEIGHT = 0.34
 // ~54 characters fit on one line at this size and width; two lines is the cap.
@@ -86,6 +89,14 @@ export default function ArtifactFrame({ artifact }: ArtifactFrameProps) {
   const { gl } = useThree()
   const frameRef = useRef<Group>(null)
   const edgeMaterialRef = useRef<MeshStandardMaterial>(null)
+  // The description board and how far it is revealed (0 hidden .. 1 shown), animated per frame
+  // without React re-renders. Troika text fades through its own fillOpacity.
+  const boardRef = useRef<Group>(null)
+  const boardFrameMaterial = useRef<MeshStandardMaterial>(null)
+  const boardPanelMaterial = useRef<MeshStandardMaterial>(null)
+  const periodTextRef = useRef<Mesh & { fillOpacity: number }>(null)
+  const descriptionTextRef = useRef<Mesh & { fillOpacity: number }>(null)
+  const reveal = useRef(0)
 
   useEffect(() => {
     if (texture) texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy())
@@ -115,6 +126,19 @@ export default function ArtifactFrame({ artifact }: ArtifactFrameProps) {
     if (edgeMaterialRef.current) {
       const targetIntensity = isNearby ? 0.55 : 0
       edgeMaterialRef.current.emissiveIntensity += (targetIntensity - edgeMaterialRef.current.emissiveIntensity) * 0.15
+    }
+
+    // Reveal / hide the description board with distance.
+    const target = isNearby ? 1 : 0
+    if (Math.abs(target - reveal.current) > 0.002) {
+      reveal.current += (target - reveal.current) * BOARD_FADE_SPEED
+      if (Math.abs(target - reveal.current) <= 0.002) reveal.current = target
+      const opacity = reveal.current
+      if (boardRef.current) boardRef.current.visible = opacity > 0.01
+      if (boardFrameMaterial.current) boardFrameMaterial.current.opacity = opacity
+      if (boardPanelMaterial.current) boardPanelMaterial.current.opacity = opacity
+      if (periodTextRef.current) periodTextRef.current.fillOpacity = opacity
+      if (descriptionTextRef.current) descriptionTextRef.current.fillOpacity = opacity
     }
   })
 
@@ -177,22 +201,24 @@ export default function ArtifactFrame({ artifact }: ArtifactFrameProps) {
       </group>
 
       {/* Small description board directly under the title plate: period, then a
-          short description (max two lines). Always visible — a caption, not a popup. */}
-      <group position={[0, -outerHeight / 2 - 0.44, 0.045]}>
+          short description (max two lines). Hidden until the player is close (see onFrame above). */}
+      <group ref={boardRef} visible={false} position={[0, -outerHeight / 2 - 0.44, 0.045]}>
         <mesh position={[0, 0, -0.01]}>
           <boxGeometry args={[boardWidth, BOARD_HEIGHT, 0.02]} />
-          <meshStandardMaterial color={FRAME_EDGE_COLOR} metalness={0.38} roughness={0.34} />
+          <meshStandardMaterial ref={boardFrameMaterial} color={FRAME_EDGE_COLOR} metalness={0.38} roughness={0.34} transparent opacity={0} />
         </mesh>
         <mesh position={[0, 0, 0.003]}>
           <boxGeometry args={[boardWidth - 0.025, BOARD_HEIGHT - 0.025, 0.018]} />
-          <meshStandardMaterial color={LABEL_COLOR} metalness={0.22} roughness={0.55} />
+          <meshStandardMaterial ref={boardPanelMaterial} color={LABEL_COLOR} metalness={0.22} roughness={0.55} transparent opacity={0} />
         </mesh>
         {period && (
-          <Text position={[0, 0.115, 0.018]} fontSize={0.034} color={PERIOD_TEXT_COLOR} anchorX="center" anchorY="middle" maxWidth={boardWidth - 0.12} textAlign="center" letterSpacing={0.05}>
+          <Text ref={periodTextRef} fillOpacity={0} position={[0, 0.115, 0.018]} fontSize={0.034} color={PERIOD_TEXT_COLOR} anchorX="center" anchorY="middle" maxWidth={boardWidth - 0.12} textAlign="center" letterSpacing={0.05}>
             {period}
           </Text>
         )}
         <Text
+          ref={descriptionTextRef}
+          fillOpacity={0}
           position={[0, period ? -0.03 : 0, 0.018]}
           fontSize={0.036}
           color={LABEL_TEXT_COLOR}

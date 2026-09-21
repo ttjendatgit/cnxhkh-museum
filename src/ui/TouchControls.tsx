@@ -1,6 +1,9 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { useArtifactStore } from '../museum/state/useArtifactStore'
 import { useFinalGameStore } from '../museum/final-room/useFinalGameStore'
+import { useVideoStore } from '../museum/state/useVideoStore'
+import { useKioskStore } from '../museum/state/useKioskStore'
+import { nearestInteraction } from '../museum/state/interactionArbiter'
 import { touchInput, resetTouchInput } from '../museum/input/touchInput'
 import { useIsTouchDevice } from '../museum/input/useIsTouchDevice'
 import './touchControls.css'
@@ -10,15 +13,18 @@ const KNOB_TRAVEL = 52
 /** Fraction of that travel a finger must move before the player starts walking. */
 const DEAD_ZONE = 0.18
 
-/** What the E key does on desktop: open the Final Room game at its station, else the nearest artifact. */
+/** What the E key does on desktop: open the Final Room game at its station, else whichever is
+ * nearest of an artifact, a Room 3 video screen and the Room 3 kiosk. */
 function interact(): void {
   const station = useFinalGameStore.getState()
   if (station.nearby && !station.open) {
     station.openStation()
     return
   }
-  const artifacts = useArtifactStore.getState()
-  if (artifacts.nearby && !artifacts.activeArtifact) artifacts.openNearest()
+  const target = nearestInteraction()
+  if (target === 'video') useVideoStore.getState().openNearest()
+  else if (target === 'kiosk') useKioskStore.getState().openKiosk()
+  else if (target === 'artifact') useArtifactStore.getState().openNearest()
 }
 
 /** Fixed virtual joystick. It only sets the walking direction (touchInput.move*); it never turns the camera. */
@@ -122,10 +128,14 @@ export default function TouchControls() {
   // Every hook is called on every render (no `||` between them, which would skip the second one).
   const artifactOpen = useArtifactStore((state) => state.activeArtifact !== null)
   const gameOpen = useFinalGameStore((state) => state.open)
+  const videoOpen = useVideoStore((state) => state.active !== null)
+  const kioskOpen = useKioskStore((state) => state.open)
+  const kioskNearby = useKioskStore((state) => state.nearby !== null)
   const artifactNearby = useArtifactStore((state) => state.nearby !== null)
   const stationNearby = useFinalGameStore((state) => state.nearby)
-  const canInteract = artifactNearby || stationNearby
-  const visible = touch && !artifactOpen && !gameOpen
+  const videoNearby = useVideoStore((state) => state.nearby !== null)
+  const canInteract = artifactNearby || stationNearby || videoNearby || kioskNearby
+  const visible = touch && !artifactOpen && !gameOpen && !videoOpen && !kioskOpen
 
   // Whenever the controls go away, or the page is hidden, nothing may keep walking or turning.
   useEffect(() => {

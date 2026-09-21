@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Text } from '@react-three/drei'
 import ExhibitSpotlight from './ExhibitSpotlight'
+import RoomSignFrame, { SIGN_TEXT_Z } from './RoomSignFrame'
 
 // Premium museum exhibition board: matte black panel, a thick bronze/gold frame
 // with a fine gold line inside it, its own warm spotlight, champagne-gold type.
@@ -13,6 +14,9 @@ export const BOARD_CHAMPAGNE = '#EAD9A8'
 export const BOARD_IVORY = '#F4EBD3'
 export const BOARD_BRONZE_TEXT = '#C9995A'
 const WARM_LIGHT = '#FFD9A0'
+// The room sign's own type colours: warm ivory for the theme, softened bronze for the period.
+const SIGN_IVORY = '#EADFC4'
+const SIGN_BRONZE = '#B98F55'
 
 // Depth layout, in the board's local +z (0 = the board's back face). The museum
 // mounts the group 4cm off the wall face (WALL_MOUNT_GAP), so the back face never
@@ -125,52 +129,63 @@ interface InteriorRoomIntroBoardProps extends InteriorRoomIntroBoardContent {
 
 /** The main introduction board inside a room, hung on the wall to a visitor's right
  * as they step in: room name, theme, a fine rule, and the period. An exhibition
- * board — independent of the small navigation sign outside the door. */
+ * board — independent of the small navigation sign outside the door. Styled as a
+ * refined black exhibition panel (RoomSignFrame) with widely spaced, softly gilded
+ * type and plenty of air; the content is exactly what the room data supplies. */
 export default function InteriorRoomIntroBoard({ roomNumber, title, period, position, rotationY = 0 }: InteriorRoomIntroBoardProps) {
   const { width, height } = INTERIOR_BOARD_SIZE
   const lines = title.split('\n')
   // Size the theme from its longest line (capitals with Vietnamese diacritics run about
-  // 0.66em per character), so a line break chosen in the data never wraps a second time.
-  // Capped below the room name, which is the largest type on the board.
+  // 0.66em per character, plus the letter spacing), so a line break chosen in the data never
+  // wraps a second time. Capped well below the room name's presence, and smaller for three lines.
   const longestLine = Math.max(...lines.map((line) => line.length))
-  const themeFontSize = Math.min(0.15, (width - 0.7) / (longestLine * 0.66))
-  // Top to bottom: room name, theme, fine rule, period.
-  const nameY = height / 2 - 0.28
-  const themeY = period ? 0.01 : -0.06
-  const ruleY = -0.36
-  const periodY = -0.47
+  const themeFontSize = Math.min(lines.length > 2 ? 0.105 : 0.13, (width - 0.9) / (longestLine * 0.74))
+  // Top to bottom: room name, a short ornamental rule, theme, a longer rule, period.
+  const nameY = 0.4
+  const ornamentY = 0.27
+  const themeY = period ? -0.04 : -0.08
+  const ruleY = -0.37
+  const periodY = -0.5
 
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <BoardFrame width={width} height={height}>
-        <Text fontSize={0.2} color={BOARD_CHAMPAGNE} anchorX="center" anchorY="middle" letterSpacing={0.16} position={[0, nameY, BOARD_TEXT_Z]}>
+      {/* Its own spotlight from above, warm, in front of the board; no shadow map. */}
+      <ExhibitSpotlight position={[0, height / 2 + 0.9, 1.7]} targetPosition={[0, 0, 0.05]} color={WARM_LIGHT} intensity={2.6} angle={0.55} penumbra={0.7} distance={6} castShadow={false} />
+      <pointLight position={[0, height / 2 - 0.15, 0.7]} color={BOARD_GOLD} intensity={0.22} distance={3.2} decay={2} />
+
+      <RoomSignFrame width={width} height={height} rail={0.022} lineInset={0.075} lineWidth={0.005}>
+        <Text fontSize={0.17} color={BOARD_GOLD} anchorX="center" anchorY="middle" letterSpacing={0.42} position={[0, nameY, SIGN_TEXT_Z]}>
           {roomNumber}
         </Text>
+        <mesh position={[0, ornamentY, 0.053]}>
+          <planeGeometry args={[0.24, 0.004]} />
+          <meshBasicMaterial color={BOARD_GOLD} transparent opacity={0.7} toneMapped={false} />
+        </mesh>
         <Text
           fontSize={themeFontSize}
-          color={BOARD_IVORY}
+          color={SIGN_IVORY}
           anchorX="center"
           anchorY="middle"
-          maxWidth={width - 0.5}
+          maxWidth={width - 0.7}
           textAlign="center"
-          lineHeight={1.25}
-          letterSpacing={0.03}
-          position={[0, themeY, BOARD_TEXT_Z]}
+          lineHeight={1.5}
+          letterSpacing={0.07}
+          position={[0, themeY, SIGN_TEXT_Z]}
         >
           {title}
         </Text>
         {period && (
           <>
             <mesh position={[0, ruleY, 0.053]}>
-              <planeGeometry args={[1.4, 0.006]} />
-              <meshBasicMaterial color={BOARD_GOLD} toneMapped={false} />
+              <planeGeometry args={[0.95, 0.004]} />
+              <meshBasicMaterial color={BOARD_GOLD} transparent opacity={0.6} toneMapped={false} />
             </mesh>
-            <Text fontSize={0.11} color={BOARD_BRONZE_TEXT} anchorX="center" anchorY="middle" letterSpacing={0.16} position={[0, periodY, BOARD_TEXT_Z]}>
+            <Text fontSize={0.095} color={SIGN_BRONZE} anchorX="center" anchorY="middle" letterSpacing={0.4} position={[0, periodY, SIGN_TEXT_Z]}>
               {period}
             </Text>
           </>
         )}
-      </BoardFrame>
+      </RoomSignFrame>
     </group>
   )
 }

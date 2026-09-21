@@ -14,6 +14,9 @@ import GlassDisplay from './GlassDisplay'
 import ContactShadow from './ContactShadow'
 import FinalGameStation from '../final-room/FinalGameStation'
 import FinalRoomScreen from '../final-room/FinalRoomScreen'
+import LedVideoSurface from './LedVideoSurface'
+import { VIDEO_COMMUNITY_SERVICES, VIDEO_VIETNAM_RISING, VIDEO_VIETNAM_THROUGH_PERIODS, type MuseumVideo } from '../data/room3Videos'
+import KioskTrigger from './KioskTrigger'
 import { BALLOT_BOX_1946, ROOM1_WALL_ARTIFACTS, ROOM2_ARTIFACTS, ROOM3_ARTIFACTS } from '../data/artifacts'
 
 interface RoomBounds {
@@ -253,6 +256,8 @@ export function Room2Props({ centerZ, width, accentColor = DEFAULT_ACCENT }: Roo
 const LED_FRAME_COLOR = '#2A1F17'
 const LED_TRIM_COLOR = '#9C7C4E'
 const LED_GOLD = '#D8B56A'
+// Width of the bronze trim around a screen's display: a thin line, not a thick frame.
+const TRIM = 0.022
 const LED_SURFACE_COLOR = '#0B0907'
 const LED_LABEL_COLOR = '#2B241D'
 const LED_LABEL_TEXT = '#F1E7D4'
@@ -263,23 +268,35 @@ interface LedScreenProps {
   /** On the wall's centreline; `rotationY` turns the screen's +z to face into the room. */
   position: [number, number, number]
   rotationY: number
-  /** Backing plate size in metres — the display is 0.12 narrower and 0.14 shorter. */
+  /** Backing plate size in metres — the display is 0.12 narrower and 0.14 shorter. With a
+   * `video` this is the largest the screen may be: it is shrunk to the video's own shape. */
   width: number
   height: number
   /** Caption plate under the screen: a title and a short descriptor. */
   label: string
   caption: string
+  /** The video this screen plays. Its frame then takes the video's aspect ratio (within
+   * `width` x `height`), so the picture fills the display with no bars, stretching or cropping. */
+  video?: MuseumVideo
 }
 
 /** An LED media screen as an exhibition focal point: dark glass in a bronze
  * frame, washed by its own warm spotlight, with a caption plate beneath in the
- * same style as the artifact captions. Idle for now — no video yet. */
-function LedScreen({ position, rotationY, width, height, label, caption }: LedScreenProps) {
-  const displayWidth = width - 0.12
-  const displayHeight = height - 0.14
+ * same style as the artifact captions. Plays its video (muted, looping) when it has one. */
+function LedScreen({ position, rotationY, width: maxWidth, height: maxHeight, label, caption, video }: LedScreenProps) {
+  // Without a video the display fills the slot. With one, it takes the video's shape inside the
+  // slot, so the thin frame hugs the picture the way a real portrait/landscape monitor would.
+  const maxDisplayWidth = maxWidth - 0.12
+  const maxDisplayHeight = maxHeight - 0.14
+  const fit = video ? Math.min(maxDisplayWidth / video.width, maxDisplayHeight / video.height) : 1
+  const displayWidth = video ? video.width * fit : maxDisplayWidth
+  const displayHeight = video ? video.height * fit : maxDisplayHeight
+  const width = displayWidth + 0.12
+  const height = displayHeight + 0.14
   const displayZ = 0.273 // display centre: wall -> 5mm -> backing plate -> 3mm -> display surface
   const faceZ = displayZ + 0.015
-  const plateWidth = Math.min(width, 2.4)
+  // Wide enough for the title even under a narrow portrait screen.
+  const plateWidth = Math.max(Math.min(width, 2.4), 1.4)
 
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
@@ -306,20 +323,21 @@ function LedScreen({ position, rotationY, width, height, label, caption }: LedSc
       </mesh>
       {/* Bronze trim just outside the display, with a fine glowing gold line along its inner edge */}
       {[
-        [0, displayHeight / 2 + 0.02, displayWidth + 0.08, 0.04],
-        [0, -(displayHeight / 2 + 0.02), displayWidth + 0.08, 0.04],
-        [-(displayWidth / 2 + 0.02), 0, 0.04, displayHeight],
-        [displayWidth / 2 + 0.02, 0, 0.04, displayHeight],
+        [0, displayHeight / 2 + TRIM / 2, displayWidth + TRIM * 2, TRIM],
+        [0, -(displayHeight / 2 + TRIM / 2), displayWidth + TRIM * 2, TRIM],
+        [-(displayWidth / 2 + TRIM / 2), 0, TRIM, displayHeight],
+        [displayWidth / 2 + TRIM / 2, 0, TRIM, displayHeight],
       ].map(([x, y, railWidth, railHeight], index) => (
         <mesh key={`trim-${index}`} position={[x, y, faceZ]}>
           <boxGeometry args={[railWidth, railHeight, 0.02]} />
-          <meshStandardMaterial color={LED_TRIM_COLOR} emissive={LED_GOLD} emissiveIntensity={0.15} metalness={0.45} roughness={0.32} />
+          <meshStandardMaterial color={LED_TRIM_COLOR} emissive={LED_GOLD} emissiveIntensity={0.06} metalness={0.45} roughness={0.36} />
         </mesh>
       ))}
       <mesh position={[0, 0, faceZ + 0.001]}>
         <planeGeometry args={[displayWidth - 0.06, 0.006]} />
         <meshBasicMaterial color={LED_GOLD} transparent opacity={0.4} toneMapped={false} />
       </mesh>
+      {video && <LedVideoSurface video={video} displayWidth={displayWidth} displayHeight={displayHeight} z={faceZ + 0.002} />}
 
       {/* Caption plate under the screen — same plate style as the artifact captions */}
       <group position={[0, -(height / 2 + 0.2), 0.26]}>
@@ -348,15 +366,44 @@ export function Room3Props({ centerZ, width, depth, accentColor = DEFAULT_ACCENT
           LEDs, and no wall carries more than a couple of highlights:
             right wall  : the room's large intro board (Museum.tsx), centred, with the info
                           panel and the kiosk zone clear on either side of it
-            left wall   : artifact 15, LED 3 (timeline / infographic, long and low), artifact 16
-                          — the LED keeps 1.5m of clear wall from each frame
-            back wall   : LED 1 (context / historical overview) straight ahead on the entry axis,
+            left wall   : artifact 15, a video screen, artifact 16
+                          — the screen keeps 1.5m of clear wall from each frame
+            back wall   : a video screen straight ahead on the entry axis,
                           and artifact 18 beyond the exit door
-            front wall  : artifact 17 beside the entrance door, LED 2 by the kiosk
-          LEDs are supplementary media displays (positions only for now; no video yet). */}
-      <LedScreen position={[-2.4, 1.6, centerZ - depth / 2]} rotationY={0} width={2.4} height={1.3} label="BỐI CẢNH LỊCH SỬ" caption="Tổng quan từ thời kỳ Đổi mới đến trước năm 2021" />
-      <LedScreen position={[3.2, 1.6, centerZ + depth / 2]} rotationY={Math.PI} width={2.0} height={1.14} label="CỘNG ĐỒNG VÀ DỊCH VỤ CÔNG" caption="Nhân dân tham gia và cải cách hành chính" />
-      <LedScreen position={[-halfWidth, 1.6, centerZ]} rotationY={Math.PI / 2} width={3.0} height={1.14} label="DÒNG THỜI GIAN" caption="Các mốc phát triển đến trước năm 2021" />
+            front wall  : artifact 17 beside the entrance door, and a video screen on the far side
+                          of the door — well clear of the kiosk, which is a lookup point, not a screen
+          Three video walls, one per wall: the timeline video on the left wall, the "rising" video
+          on the back wall, the community / public-services video on the front wall. They play
+          muted on a loop; E next to one opens the large player (VideoPlayerOverlay). */}
+      <LedScreen
+        position={[-2.4, 1.6, centerZ - depth / 2]}
+        rotationY={0}
+        width={2.4}
+        height={1.3}
+        label={VIDEO_VIETNAM_RISING.title}
+        caption="Video tư liệu"
+        video={VIDEO_VIETNAM_RISING}
+      />
+      <LedScreen
+        position={[-halfWidth, 1.6, centerZ]}
+        rotationY={Math.PI / 2}
+        width={3.0}
+        height={1.3}
+        label={VIDEO_VIETNAM_THROUGH_PERIODS.title}
+        caption="Video tư liệu"
+        video={VIDEO_VIETNAM_THROUGH_PERIODS}
+      />
+      {/* Slot 2.0 x 1.14 — the front-wall screen's original size: a 16:9 picture fills it as a
+          1.9 x 1.14 frame, between the portrait and the near-square screens in scale. */}
+      <LedScreen
+        position={[2.0, 1.6, centerZ + depth / 2]}
+        rotationY={Math.PI}
+        width={2.0}
+        height={1.14}
+        label={VIDEO_COMMUNITY_SERVICES.title}
+        caption="Video tư liệu"
+        video={VIDEO_COMMUNITY_SERVICES}
+      />
 
       {/* The four primary exhibits — same artifact system as Rooms 1 and 2 (walk
           up and press E), spread over three walls: two on the left wall, one on
@@ -412,6 +459,10 @@ export function Room3Props({ centerZ, width, depth, accentColor = DEFAULT_ACCENT
         <boxGeometry args={[0.32, 0.22, 0.02]} />
         <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={0.8} />
       </mesh>
+
+      {/* The kiosk is a lookup point (sources, source ledger, FAQ) — E opens its panel (KioskPanel);
+          it never plays video. Invisible: it adds no geometry to the kiosk model above. */}
+      <KioskTrigger position={[kioskPosition[0], 0.95, kioskPosition[2] + 0.3]} />
 
       {/* Room III intentionally has no hero artifact spotlight — the kiosk is
           interactive furniture, not the room's focal artifact, so it only

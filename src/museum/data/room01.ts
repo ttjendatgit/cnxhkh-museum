@@ -18,7 +18,7 @@ const CLOUDINARY_UPLOAD = 'https://res.cloudinary.com/dw8lijwvw/image/upload'
 export const room01Images: RoomImage[] = [
   {
     id: 'historical-context',
-    title: 'Bối cảnh lịch sử năm 1946',
+    title: 'Bối cảnh lịch sử năm 1945',
     description: 'Bối cảnh đất nước trước cuộc Tổng tuyển cử đầu tiên.',
     imageUrl: `${CLOUDINARY_UPLOAD}/v1789810829/1945.png`,
     gallery: [

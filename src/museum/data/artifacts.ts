@@ -42,8 +42,8 @@ export const ROOM1_WALL_ARTIFACTS: Artifact[] = [
   {
     id: 'room1-historical-context',
     roomId: 'room1',
-    title: 'Bối cảnh lịch sử năm 1946',
-    year: '1945 – 1946',
+    title: 'Bối cảnh lịch sử năm 1945',
+    year: '02/09/1945',
     location: 'Việt Nam',
     category: 'Tư liệu lịch sử',
     description:

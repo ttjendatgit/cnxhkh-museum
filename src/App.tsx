@@ -3,6 +3,9 @@ import Museum from './museum/Museum'
 import PlayerController from './museum/PlayerController'
 import HUD from './ui/HUD'
 import ArtifactDetailPanel from './museum/components/ArtifactDetailPanel'
+import VideoPlayerOverlay from './museum/components/VideoPlayerOverlay'
+import KioskPanel from './museum/components/KioskPanel'
+import HelpGuide from './ui/HelpGuide'
 import FinalGameOverlay from './museum/final-room/FinalGameOverlay'
 import FinalGameStandalone from './museum/final-room/FinalGameStandalone'
 import { getStandaloneFinalGameView } from './museum/final-room/finalGameRoute'
@@ -39,6 +42,9 @@ export default function App() {
       <HUD />
       <TouchControls />
       <ArtifactDetailPanel />
+      <VideoPlayerOverlay />
+      <KioskPanel />
+      <HelpGuide />
       <FinalGameOverlay />
     </>
   )
