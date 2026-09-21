@@ -13,6 +13,7 @@ export { default as AdminControl } from './components/AdminControl'
 
 export * from './types'
 export { QUESTIONS, FINAL_KEYWORD, KEYWORD_LETTERS } from './data/questions'
-export { DEFAULT_SCORING, computeScore, rankTeams, rankWinners } from './services/scoring'
+export { DEFAULT_SCORING, computeScore } from './services/scoring'
+export { calculateRanking, rankWinners } from './services/rankingService'
 export { isFirebaseConfigured } from './services/firebase'
 export { isUsingMockBackend, getBackend, joinGame, submitAnswer, submitKeyword, adminStartGame, adminPauseGame, adminResumeGame, adminEndGame, adminResetGame } from './services/gameService'

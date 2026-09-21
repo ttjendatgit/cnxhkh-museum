@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { LeaderboardEntry } from '../types'
 import { QUESTIONS } from '../data/questions'
-import { rankTeams, rankWinners } from '../services/scoring'
+import { calculateRanking, rankWinners } from '../services/rankingService'
 import { useAllTeams } from './useAllTeams'
 
 /** Realtime ranked leaderboard, derived client-side from the live `teams`
@@ -10,7 +10,7 @@ import { useAllTeams } from './useAllTeams'
 export function useLeaderboard(): LeaderboardEntry[] {
   const teams = useAllTeams()
 
-  return useMemo(() => rankTeams(Object.values(teams), QUESTIONS.length), [teams])
+  return useMemo(() => calculateRanking(Object.values(teams), QUESTIONS.length), [teams])
 }
 
 /** The Top 3 prize winners (eligible teams only), for the end-of-game board. */

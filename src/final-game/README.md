@@ -117,13 +117,12 @@ passes a `resolveArtifact` function (see `resolveArtifactHint.ts`) to `PlayerScr
 - **Victory** = all 13 questions solved **and** the keyword correct, in either order.
   It sets `finished`, `finishedAt` and `completionTime` (game start to victory, minus
   paused time) in the same write as the answer or keyword that completed it.
-- **Ranking** has two modes (`services/scoring.ts`):
-  - *During the game* (`playing` / `paused`): every team is ranked by higher score, then more
-    questions solved, then earlier `joinedAt` (`rankTeams`).
-  - *After the game* (`finished`): a **Top 3** section of winners (`rankWinners`). A winner has
-    all 13 questions solved, `keywordCorrect` and `finished`; they are ordered by higher score,
-    then shorter `completionTime`, then earlier `joinedAt`. Teams outside the Top 3 stay listed
-    below with their normal `rankTeams` ranking. Tests: `npm test` (`services/scoring.test.ts`).
+- **Ranking** is one function, `services/rankingService.ts#calculateRanking`, used by the leaderboard,
+  the Top 3 and each team's own result screen (so a team's rank is identical everywhere): higher score,
+  then shorter `completionTime` (no time sorts last), then more questions solved, then earlier `joinedAt`.
+  After the game (`finished`) the leaderboard also shows a **Top 3** (`rankWinners`): the same order,
+  restricted to teams with all 13 questions solved, `keywordCorrect` and `finished`. Tests: `npm test`
+  (`services/rankingService.test.ts`).
 - Scoring is in `services/scoring.ts`: 10 points per question, +100 for the keyword.
 
 ## Backends: mock <-> Firebase
@@ -170,7 +169,7 @@ Firebase import), so the mock and Firebase backends behave identically.
 - The admin writes `status` and `timing` (and resets teams).
 - The leaderboard and the admin subscribe to `teams` and update the instant any
   team changes. There is no separately-written `leaderboard` path: every client
-  ranks `teams` via `services/scoring.ts#rankTeams()` (see Game rules).
+  ranks `teams` via `services/rankingService.ts#calculateRanking()` (see Game rules).
 
 Starting rules (tighten before a public event; without Firebase Auth these only
 constrain the shape and the paths, not *who* writes):

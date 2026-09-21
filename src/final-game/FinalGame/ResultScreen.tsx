@@ -1,6 +1,7 @@
 import type { TeamRecord } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import { useLeaderboard } from '../hooks/useLeaderboard'
+import { findRank } from '../services/rankingService'
 import { QUESTIONS } from './questions'
 import '../styles/finalGame.css'
 
@@ -17,7 +18,8 @@ export default function ResultScreen({ team }: { team: TeamRecord }) {
   const entries = useLeaderboard()
   // Until the admin ends the game, other teams are still playing: this rank can still change.
   const gameOver = useGameState().status === 'finished'
-  const entry = entries.find((candidate) => candidate.teamId === team.teamId)
+  // Same list, same order as the public leaderboard (useLeaderboard → calculateRanking).
+  const myRank = findRank(entries, team.teamId)
 
   return (
     <div className="final-game">
@@ -49,7 +51,7 @@ export default function ResultScreen({ team }: { team: TeamRecord }) {
         <div className="fg-divider" />
         <div className="fg-result">
           <div>
-            <span className="fg-result__value">{entry ? `${entry.rank} / ${entries.length}` : '—'}</span>
+            <span className="fg-result__value">{myRank !== null ? `${myRank} / ${entries.length}` : '—'}</span>
             <span className="fg-result__label">{gameOver ? 'Xếp hạng' : 'Hạng tạm thời'}</span>
           </div>
           <div>
