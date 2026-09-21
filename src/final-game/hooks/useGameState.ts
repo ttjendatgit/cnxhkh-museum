@@ -10,13 +10,20 @@ const INITIAL_STATE: GameStateRecord = {
   endedAt: null,
 }
 
-/** Subscribes to the global game state (waiting/playing/paused/finished). */
-export function useGameState(): GameStateRecord {
-  const [state, setState] = useState<GameStateRecord>(INITIAL_STATE)
+/** The global game state (waiting/playing/paused/finished) and whether the database has answered
+ * yet. Until it has, `state` is the initial "waiting" — a screen that must not treat a game in
+ * progress as "not started" (a reload mid-game) waits for `loaded`. */
+export function useGameStatus(): { state: GameStateRecord; loaded: boolean } {
+  const [value, setValue] = useState<{ state: GameStateRecord; loaded: boolean }>({ state: INITIAL_STATE, loaded: false })
 
   useEffect(() => {
-    return getBackend().subscribeGameState(setState)
+    return getBackend().subscribeGameState((state) => setValue({ state, loaded: true }))
   }, [])
 
-  return state
+  return value
+}
+
+/** Subscribes to the global game state (waiting/playing/paused/finished). */
+export function useGameState(): GameStateRecord {
+  return useGameStatus().state
 }

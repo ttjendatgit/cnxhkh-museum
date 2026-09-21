@@ -84,6 +84,15 @@ passes a `resolveArtifact` function (see `resolveArtifactHint.ts`) to `PlayerScr
   into view. Fields and buttons are >= 48px; the answer box asks the keyboard for a "Go" key and is
   scrolled above the keyboard when focused (`hooks/useKeyboardInset.ts`). The museum's touch controls
   (joystick, swipe-to-look, [TƯƠNG TÁC]) live in `src/ui/TouchControls.tsx`.
+- **Game phases** (`services/gamePhase.ts`), derived from the room status the admin already writes:
+  WAITING (`waiting`), RUNNING (`playing`, and `paused` with answers held), FINISHED (`finished`).
+  While WAITING a team sees only "Trò chơi chưa bắt đầu. Vui lòng chờ chủ trò bắt đầu." — the crossword,
+  question list, question text and answer boxes are not rendered at all, and the screen switches by itself
+  when the host starts. `submitAnswer` / `submitKeyword` read the live status and throw
+  `GameNotRunningError` unless it is `playing`, so nothing is checked or recorded when waiting, paused or
+  finished, whatever the UI shows. Limit: the question bank ships inside the client JS, so a determined
+  player can still read it from the bundle — closing that needs a server (Cloud Function / rules) that
+  hands out questions only once the game is running.
 - **One team = one device.** There is no "join an existing team". A group types a team name
   (button "Bắt đầu"); a name another team already uses — compared without case or extra spaces,
   so "Nhóm 1" = "nhóm 1" = "Nhóm   1" — is refused with "Tên đội đã tồn tại. Vui lòng chọn tên

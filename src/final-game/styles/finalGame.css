@@ -754,3 +754,23 @@
     scroll-margin-top: calc(var(--fg-sticky-top, env(safe-area-inset-top, 0px)) + 110px);
   }
 }
+
+/* ── Waiting for the host to start ───────────────────────────────────── */
+
+.fg-waiting {
+  max-width: 640px;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.fg-waiting__message {
+  margin: 0;
+  font-family: 'Noto Serif', 'Times New Roman', serif;
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.5;
+  color: var(--fg-gold);
+}
+
+.fg-waiting__hint {
+  margin: 14px 0 0;
+}

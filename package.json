@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "test": "node --experimental-strip-types --test src/final-game/services/scoring.test.ts src/final-game/services/questionProgress.test.ts src/final-game/services/roomSchema.test.ts src/final-game/services/teamName.test.ts src/final-game/data/questions.test.ts",
+    "test": "node --experimental-strip-types --test src/final-game/services/scoring.test.ts src/final-game/services/questionProgress.test.ts src/final-game/services/roomSchema.test.ts src/final-game/services/teamName.test.ts src/final-game/data/questions.test.ts src/final-game/services/gamePhase.test.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },

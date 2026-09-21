@@ -6,9 +6,11 @@ import QuestionPanel from '../FinalGame/QuestionPanel'
 import QuestionPicker from '../FinalGame/QuestionPicker'
 import { QUESTIONS } from '../FinalGame/questions'
 import ResultScreen from '../FinalGame/ResultScreen'
+import WaitingScreen from '../FinalGame/WaitingScreen'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { useTeam } from '../hooks/useTeam'
-import { useGameState } from '../hooks/useGameState'
+import { useGameStatus } from '../hooks/useGameState'
+import { gamePhase } from '../services/gamePhase'
 import { nextUnsolvedId } from '../services/questionProgress'
 import { getRoomId } from '../services/room'
 import type { ResolveArtifact, TeamRecord } from '../types'
@@ -44,7 +46,7 @@ export default function PlayerScreen({ resolveArtifact }: PlayerScreenProps) {
   const { team, loading } = useTeam(teamId)
   const questionPanel = useRef<HTMLDivElement>(null)
   useKeyboardInset()
-  const gameState = useGameState()
+  const { state: gameState, loaded: gameLoaded } = useGameStatus()
 
   useEffect(() => {
     try {
@@ -70,7 +72,7 @@ export default function PlayerScreen({ resolveArtifact }: PlayerScreenProps) {
 
   // After a reload the stored team is looked up in the database first: showing the name form
   // meanwhile would look like the team was lost (and invite creating a second one).
-  if (teamId && loading) {
+  if (teamId && (loading || !gameLoaded)) {
     return (
       <div className="final-game">
         <p className="fg-muted">Đang khôi phục đội…</p>
@@ -78,7 +80,25 @@ export default function PlayerScreen({ resolveArtifact }: PlayerScreenProps) {
     )
   }
   if (!teamId || !team) return <TeamLobby onJoined={handleJoined} />
-  if (gameState.status === 'finished' || team.finished) return <ResultScreen team={team} />
+  const phase = gamePhase(gameState.status)
+  // FINISHED (or this team won): the result, no way to answer.
+  if (phase === 'FINISHED' || team.finished) return <ResultScreen team={team} />
+
+  // WAITING: the host has not started. Nothing of the game is rendered — no crossword, no question
+  // list, no question text, no answer box, nothing to pick — only the waiting message. (Answers are
+  // also refused in the answer-checking code, see submitAnswer.)
+  if (phase === 'WAITING') {
+    return (
+      <div className="final-game">
+        <header className="fg-game__header">
+          <p className="final-game__eyebrow">Phòng Kết — {team.teamName}</p>
+          <h1 className="final-game__title">Bí Mật Của Nhân Dân</h1>
+        </header>
+        <PlayerStatusBar team={team} gameState={gameState} />
+        <WaitingScreen />
+      </div>
+    )
+  }
 
   const activeId = selectedId ?? nextUnsolvedId(QUESTIONS.map((question) => question.id), team.solvedQuestions)
 

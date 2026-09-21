@@ -6,8 +6,10 @@ import { createMockBackend } from './mockBackend'
 import type { GameBackend } from './gameBackend'
 import { computeScore, DEFAULT_SCORING } from './scoring'
 import { cleanTeamName, isTeamNameTaken, TEAM_NAME_TAKEN_MESSAGE } from './teamName'
+import { acceptsAnswers, GameNotRunningError } from './gamePhase'
 
 export type { GameBackend } from './gameBackend'
+export { GameNotRunningError } from './gamePhase'
 
 let backendInstance: GameBackend | null = null
 
@@ -86,7 +88,7 @@ export async function joinGame(teamName: string): Promise<TeamRecord> {
 }
 
 /** The game clock a completion time is measured on: when the game started and how long it was paused. */
-export interface GameClock {
+interface GameClock {
   startedAt: number | null
   totalPausedMs: number
 }
@@ -103,8 +105,18 @@ function victoryPatch(clock: GameClock | null): Pick<TeamRecord, 'finished' | 'f
   return { finished: true, finishedAt: now, completionTime: elapsedMs(clock, now) }
 }
 
+/** The live game state, read from the database at this moment (not from a screen's copy), and
+ * refused unless the game is playing. Every answer passes through here first: this — not what the
+ * screen shows — is what keeps the questions closed before the host starts and after it ends.
+ * Returns the state, whose clock the completion time is then measured on. */
+async function requirePlaying(): Promise<GameStateRecord> {
+  const state = await readOnce<GameStateRecord>((cb) => getBackend().subscribeGameState(cb))
+  if (!acceptsAnswers(state.status)) throw new GameNotRunningError(state.status)
+  return state
+}
+
 /** Checks an answer against a question BEFORE writing anything: a wrong answer returns false
- * and changes nothing. A correct one persists the team's own progress (solved questions,
+ * and changes nothing. Throws GameNotRunningError, having checked nothing, unless the game is playing. A correct one persists the team's own progress (solved questions,
  * revealed letter, score) and returns true. Already-solved questions count as correct
  * (idempotent re-submit).
  *
@@ -114,9 +126,9 @@ export async function submitAnswer(
   team: TeamRecord,
   questionId: number,
   rawAnswer: string,
-  clock: GameClock | null,
   scoring: ScoringConfig = DEFAULT_SCORING,
 ): Promise<boolean> {
+  const clock = await requirePlaying()
   if (team.solvedQuestions.includes(questionId)) return true
 
   const questionIndex = QUESTIONS.findIndex((q) => q.id === questionId)
@@ -151,9 +163,10 @@ export async function submitAnswer(
 export async function submitKeyword(
   team: TeamRecord,
   attempt: string,
-  clock: GameClock | null,
   scoring: ScoringConfig = DEFAULT_SCORING,
 ): Promise<{ correct: boolean; finished: boolean }> {
+  // Like an answer, a keyword attempt is refused (GameNotRunningError) unless the game is playing.
+  const clock = await requirePlaying()
   if (team.finished) return { correct: true, finished: true }
 
   const correct = comparisonKey(attempt) === comparisonKey(FINAL_KEYWORD)

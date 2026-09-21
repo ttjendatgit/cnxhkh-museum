@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { GameStateRecord, Question, ResolveArtifact, TeamRecord } from '../types'
 import { GAME_STATUS_MESSAGES } from '../data/statusMessages'
-import { submitAnswer, submitKeyword } from '../services/gameService'
+import { GameNotRunningError, submitAnswer, submitKeyword } from '../services/gameService'
+import { gamePhase } from '../services/gamePhase'
 import { nextUnsolvedId } from '../services/questionProgress'
 import { DEFAULT_SCORING } from '../services/scoring'
 import { QUESTIONS } from './questions'
@@ -47,7 +48,6 @@ function FeedbackLine({ feedback }: { feedback: AnswerFeedback }) {
 
 interface ClueStepProps {
   team: TeamRecord
-  gameState: GameStateRecord
   question: Question
   index: number
   locked: boolean
@@ -64,7 +64,7 @@ interface ClueStepProps {
  * and a pending "move on" timer is cancelled). After a correct answer it keeps showing the
  * question with "Chính xác! +10 điểm" for a moment — the team record (score, solved list,
  * crossword row) is already updated, only the swap to the next question is held back. */
-function ClueStep({ team, gameState, question, index, locked, resolveArtifact, onPin, onAdvance }: ClueStepProps) {
+function ClueStep({ team, question, index, locked, resolveArtifact, onPin, onAdvance }: ClueStepProps) {
   const [feedback, setFeedback] = useState<AnswerFeedback>(NO_FEEDBACK)
   const [advancing, setAdvancing] = useState(false)
   const timer = useRef<number | undefined>(undefined)
@@ -77,8 +77,16 @@ function ClueStep({ team, gameState, question, index, locked, resolveArtifact, o
   async function handleSubmit(answer: string) {
     onPin()
     // submitAnswer checks the answer first and writes to Firebase (score, solved questions,
-    // revealed letter) only when it is correct; a wrong answer writes nothing.
-    const correct = await submitAnswer(team, question.id, answer, gameState)
+    // revealed letter) only when it is correct; a wrong answer writes nothing. It refuses outright
+    // (GameNotRunningError) unless the game is playing — e.g. it was paused or ended a moment ago.
+    let correct: boolean
+    try {
+      correct = await submitAnswer(team, question.id, answer)
+    } catch (error) {
+      if (!(error instanceof GameNotRunningError)) throw error
+      setFeedback({ type: 'error', message: GAME_STATUS_MESSAGES[error.status] })
+      return false
+    }
     if (correct) {
       setFeedback({ type: 'success', message: `Chính xác! +${DEFAULT_SCORING.pointsPerQuestion} điểm` })
       setAdvancing(true)
@@ -109,11 +117,19 @@ function ClueStep({ team, gameState, question, index, locked, resolveArtifact, o
 
 /** The final keyword box. It can be tried at any time; a correct keyword is recorded but only
  * finishes the game together with all 13 answers. The keyword itself is never shown. */
-function KeywordStep({ team, gameState, locked }: { team: TeamRecord; gameState: GameStateRecord; locked: boolean }) {
+function KeywordStep({ team, locked }: { team: TeamRecord; locked: boolean }) {
   const [feedback, setFeedback] = useState<AnswerFeedback>(NO_FEEDBACK)
 
   async function handleSubmit(attempt: string) {
-    const { correct, finished } = await submitKeyword(team, attempt, gameState)
+    let outcome: { correct: boolean; finished: boolean }
+    try {
+      outcome = await submitKeyword(team, attempt)
+    } catch (error) {
+      if (!(error instanceof GameNotRunningError)) throw error
+      setFeedback({ type: 'error', message: GAME_STATUS_MESSAGES[error.status] })
+      return false
+    }
+    const { correct, finished } = outcome
     if (!correct) setFeedback({ type: 'error', message: 'Từ khóa chưa chính xác. Hãy thử lại!' })
     else if (!finished) setFeedback({ type: 'success', message: KEYWORD_FOUND_MESSAGE })
     return correct
@@ -148,6 +164,10 @@ export default function QuestionPanel({ team, gameState, activeId, onSelect, res
     latestSolved.current = team.solvedQuestions
   })
 
+  // Before the host starts the game there are no questions to show, whoever renders this (PlayerScreen
+  // does not even mount it then; this is the second lock).
+  if (gamePhase(gameState.status) === 'WAITING') return null
+
   const index = QUESTIONS.findIndex((question) => question.id === activeId)
   const gameLocked = gameState.status !== 'playing' || team.finished
 
@@ -167,7 +187,6 @@ export default function QuestionPanel({ team, gameState, activeId, onSelect, res
         <ClueStep
           key={QUESTIONS[index].id}
           team={team}
-          gameState={gameState}
           question={QUESTIONS[index]}
           index={index}
           locked={gameLocked}
@@ -176,7 +195,7 @@ export default function QuestionPanel({ team, gameState, activeId, onSelect, res
           onAdvance={() => advanceFrom(QUESTIONS[index].id)}
         />
       )}
-      <KeywordStep team={team} gameState={gameState} locked={gameLocked} />
+      <KeywordStep team={team} locked={gameLocked} />
       {gameState.status !== 'playing' && <p className="fg-feedback fg-feedback--wrong">{GAME_STATUS_MESSAGES[gameState.status]}</p>}
       <div className="fg-progress-bar">
         <div className="fg-progress-bar__fill" style={{ width: `${(team.solvedQuestions.length / QUESTIONS.length) * 100}%` }} />
